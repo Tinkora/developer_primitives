@@ -31,14 +31,10 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@c4dd10e44af883a891fe31ced449bcb4a6728b9b
+        uses: github/codeql-action/init@5595ccaf912efad79be6eef63a5619ff05969be3
         with:
           languages: rust
-          build-mode: manual
-
-      - name: Build Rust workspace
-        shell: bash
-        run: cargo build --workspace --locked
+          build-mode: none
 
       - name: Analyze workspace
-        uses: github/codeql-action/analyze@c4dd10e44af883a891fe31ced449bcb4a6728b9b
+        uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3
