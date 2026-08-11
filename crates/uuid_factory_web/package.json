@@ -1,0 +1,12 @@
+{
+  "name": "tinkora-developer-primitives-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build:wasm": "wasm-pack build --target web --out-dir static/pkg .",
+    "test:browser": "npm run build:wasm && playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}

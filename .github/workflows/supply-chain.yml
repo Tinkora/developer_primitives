@@ -1,0 +1,32 @@
+name: Supply-chain audit
+
+'on':
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/**/Cargo.toml'
+      - 'deny.toml'
+      - '.github/workflows/**'
+  push:
+    branches: [main]
+    paths:
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/**/Cargo.toml'
+      - 'deny.toml'
+      - '.github/workflows/**'
+  schedule:
+    - cron: '43 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    uses: Tinkora/.github/.github/workflows/reusable-supply-chain.yml@e967aed0860957b24daf57e66766713c60b5bcae
+    with:
+      toolchain: '1.95.0'
+      working-directory: .
