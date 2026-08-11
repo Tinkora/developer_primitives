@@ -71,7 +71,9 @@ The caller must select one of these kinds:
 - `rfc3339`: RFC 3339 with an explicit `Z` or numeric offset.
 
 Naive date/time strings are rejected for instant conversion. The core does not
-guess seconds versus milliseconds from magnitude.
+guess seconds versus milliseconds from magnitude. RFC 3339 input with more
+than three fractional-second digits is rejected rather than silently losing
+precision in the millisecond contract.
 
 ### Instant conversion result
 
