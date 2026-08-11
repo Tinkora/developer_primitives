@@ -11,7 +11,7 @@ fn version_reports_package_version() {
     assert!(output.status.success());
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "tinkora-time 0.1.0\n"
+        "tinkora-time 0.2.0\n"
     );
     assert!(output.stderr.is_empty());
 }

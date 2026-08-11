@@ -50,7 +50,10 @@ pub fn parse_instant(kind: InstantInputKind, input: &str) -> Result<ParsedInstan
 
 fn parse_rfc3339(input: &str) -> Result<Timestamp, TimeError> {
     let datetime = DateTime::parse_from_rfc3339(input).map_err(|_| TimeError::InvalidRfc3339)?;
-    if datetime.timestamp_subsec_nanos() % 1_000_000 != 0 {
+    let fractional_digits = input.split_once('.').map_or(0, |(_, suffix)| {
+        suffix.bytes().take_while(u8::is_ascii_digit).count()
+    });
+    if fractional_digits > 3 || datetime.timestamp_subsec_nanos() % 1_000_000 != 0 {
         return Err(TimeError::InvalidRfc3339);
     }
 

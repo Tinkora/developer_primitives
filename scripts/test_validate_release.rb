@@ -8,6 +8,13 @@ require "tmpdir"
 
 class ValidateReleaseTest < Minitest::Test
   VALIDATOR = File.expand_path("validate_release.rb", __dir__)
+  VERSIONED_CRATES = %w[
+    timestamp_zone_cli
+    timestamp_zone_core
+    uuid_factory_cli
+    uuid_factory_core
+    uuid_factory_web
+  ].freeze
 
   def test_accepts_matching_tag_manifests_and_changelog
     with_fixture do |root|
@@ -31,6 +38,17 @@ class ValidateReleaseTest < Minitest::Test
     end
   end
 
+  def test_rejects_each_crate_version_mismatch
+    VERSIONED_CRATES.each do |crate|
+      with_fixture(crate_versions: { crate => "0.2.0" }) do |root|
+        result = run_validator(root, "v0.1.0")
+
+        refute result[:status].success?, "#{crate} mismatch was accepted"
+        assert_includes result[:output], "#{crate} version does not match"
+      end
+    end
+  end
+
   def test_rejects_a_release_heading_without_body_content
     with_fixture(release_body: "") do |root|
       result = run_validator(root, "v0.1.0")
@@ -42,12 +60,13 @@ class ValidateReleaseTest < Minitest::Test
 
   private
 
-  def with_fixture(version: "0.1.0", release_body: "### Added\n\n- First release.\n")
+  def with_fixture(version: "0.1.0", crate_versions: {}, release_body: "### Added\n\n- First release.\n")
     Dir.mktmpdir("validate-release-") do |root|
-      %w[uuid_factory_cli uuid_factory_core uuid_factory_web].each do |crate|
+      VERSIONED_CRATES.each do |crate|
         path = File.join(root, "crates", crate)
         FileUtils.mkdir_p(path)
-        File.write(File.join(path, "Cargo.toml"), "version = \"#{version}\"\n", encoding: "UTF-8")
+        crate_version = crate_versions.fetch(crate, version)
+        File.write(File.join(path, "Cargo.toml"), "version = \"#{crate_version}\"\n", encoding: "UTF-8")
       end
       File.write(
         File.join(root, "CHANGELOG.md"),

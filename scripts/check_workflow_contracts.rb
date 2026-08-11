@@ -106,9 +106,83 @@ if pages
   end
 end
 
+ci = workflows[".github/workflows/ci.yml"]
+ci_values = ci ? values(ci.fetch("jobs", {})) : []
+unless ci_values.any? { |value| value.include?("ruby scripts/check_workflow_contracts.rb") }
+  errors << "CI must run scripts/check_workflow_contracts.rb"
+end
+
 release = workflows[".github/workflows/release.yml"]
 if release
-  release_job = release.fetch("jobs", {}).fetch("release", {})
+  release_jobs = release.fetch("jobs", {})
+  cli_job = release_jobs.fetch("cli", {})
+  cli_steps = cli_job.fetch("steps", [])
+  cli_commands = cli_steps.filter_map { |step| step["run"] if step["run"].is_a?(String) }
+  build_command = cli_commands.find { |command| command.match?(/\bcargo\b.*\bbuild\b/) }
+  cli_crates = %w[uuid_factory_cli timestamp_zone_cli]
+  unless build_command && cli_crates.all? { |crate| build_command.match?(/(?:^|\s)-p\s+#{Regexp.escape(crate)}(?:\s|$)/) }
+    errors << "release CLI build must include uuid_factory_cli and timestamp_zone_cli"
+  end
+  cli_binaries = %w[tinkora-id tinkora-time]
+  unless cli_binaries.all? { |binary| cli_commands.any? { |command| command.include?(binary) && command.include?("--version") } }
+    errors << "release CLI verification must include tinkora-id and tinkora-time"
+  end
+  archive_steps = cli_steps.select do |step|
+    name = step.fetch("name", "")
+    command = step["run"]
+    command.is_a?(String) && (name.start_with?("Archive ") || command.match?(/archive_?[Ss]tem\s*=/))
+  end
+  archive_stems = [
+    "tinkora-developer-primitives-${VERSION}-${TARGET}",
+    "tinkora-developer-primitives-$VERSION-$TARGET",
+    "tinkora-developer-primitives-$env:VERSION-$env:TARGET"
+  ]
+  unless archive_steps.any? && archive_steps.all? { |step| cli_binaries.all? { |binary| step["run"].include?(binary) } }
+    errors << "release CLI archives must include tinkora-id and tinkora-time"
+  end
+  archive_step_names = archive_steps.map { |step| step.fetch("name", "") }
+  unless %w[Archive\ Unix\ CLI Archive\ Windows\ CLI].all? { |name| archive_step_names.include?(name) }
+    errors << "release CLI job must include Unix and Windows archive steps"
+  end
+  linked_docs = %w[README.md README.zh-CN.md docs/product_spec.md docs/product_spec.zh-CN.md]
+  unless archive_steps.any? && archive_steps.all? { |step| linked_docs.all? { |path| step["run"].include?(path) } }
+    errors << "release CLI archives must include linked bilingual documentation"
+  end
+  unless archive_steps.any? && archive_steps.all? { |step| archive_stems.any? { |stem| step["run"].include?(stem) } }
+    errors << "release CLI archives must use the tinkora-developer-primitives VERSION and TARGET stem"
+  end
+  archive_steps.each do |step|
+    name = step.fetch("name", "")
+    command = step["run"]
+    if name.include?("Unix") && !command.include?(".tar.gz")
+      errors << "release Unix CLI archive must use tar.gz"
+    elsif name.include?("Windows") && !command.include?(".zip")
+      errors << "release Windows CLI archive must use zip"
+    end
+  end
+  matrix = cli_job.dig("strategy", "matrix", "include")
+  if matrix.is_a?(Array)
+    expected_platforms = %w[linux macos windows]
+    actual_platforms = matrix.filter_map { |entry| entry["platform"] }
+    unless actual_platforms.sort == expected_platforms.sort
+      errors << "release CLI matrix must include linux, macos, and windows"
+    end
+    extensions_valid = matrix.all? do |entry|
+      entry["extension"] == (entry["platform"] == "windows" ? "zip" : "tar.gz")
+    end
+    errors << "release CLI matrix must use zip for Windows and tar.gz elsewhere" unless extensions_valid
+  else
+    errors << "release CLI matrix must include linux, macos, and windows"
+  end
+  upload_step = cli_steps.find { |step| step.fetch("name", "") == "Upload CLI archive" }
+  if upload_step
+    expected_path = "${{ runner.temp }}/tinkora-developer-primitives-${{ needs.metadata.outputs.version }}-${{ matrix.target }}.${{ matrix.extension }}"
+    errors << "release CLI upload path must use the shared archive stem" unless upload_step.dig("with", "path") == expected_path
+  else
+    errors << "release CLI job must upload the platform archive"
+  end
+
+  release_job = release_jobs.fetch("release", {})
   errors << "release job must have contents: write" unless release_job.dig("permissions", "contents") == "write"
   attestation_permissions = %w[attestations artifact-metadata id-token]
   unless attestation_permissions.all? { |permission| release_job.dig("permissions", permission) == "write" }

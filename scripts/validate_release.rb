@@ -18,7 +18,13 @@ begin
   raise "tag must use vMAJOR.MINOR.PATCH" unless match
 
   version = tag.delete_prefix("v")
-  %w[uuid_factory_cli uuid_factory_core uuid_factory_web].each do |crate|
+  %w[
+    timestamp_zone_cli
+    timestamp_zone_core
+    uuid_factory_cli
+    uuid_factory_core
+    uuid_factory_web
+  ].each do |crate|
     manifest = File.read(File.join(root, "crates", crate, "Cargo.toml"), encoding: "UTF-8")
     raise "#{crate} version does not match #{tag}" unless manifest.match?(/^version = "#{Regexp.escape(version)}"$/)
   end

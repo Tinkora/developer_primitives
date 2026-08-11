@@ -594,7 +594,7 @@ dependencies = [
 
 [[package]]
 name = "timestamp_zone_cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "serde",
@@ -604,7 +604,7 @@ dependencies = [
 
 [[package]]
 name = "timestamp_zone_core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "jiff",
@@ -642,7 +642,7 @@ checksum = "bf3923a6f5c4c6382e0b653c4117f48d631ea17f38ed86e2a828e6f7412f5239"
 
 [[package]]
 name = "uuid_factory_cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "serde",
@@ -652,7 +652,7 @@ dependencies = [
 
 [[package]]
 name = "uuid_factory_core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "getrandom",
@@ -665,7 +665,7 @@ dependencies = [
 
 [[package]]
 name = "uuid_factory_web"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "js-sys",
  "serde",

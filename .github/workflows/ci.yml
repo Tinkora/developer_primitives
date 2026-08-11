@@ -33,6 +33,7 @@ jobs:
           ruby scripts/test_check_workflow_contracts.rb
           ruby scripts/test_validate_release.rb
           ruby scripts/check_docs.rb
+          ruby scripts/check_workflow_contracts.rb
 
   browser:
     name: Browser workbench

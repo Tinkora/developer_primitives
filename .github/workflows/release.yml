@@ -67,17 +67,21 @@ jobs:
 
       - name: Build CLI
         shell: bash
-        run: cargo +1.95.0 build --release --locked -p uuid_factory_cli
+        run: cargo +1.95.0 build --release --locked -p uuid_factory_cli -p timestamp_zone_cli
 
       - name: Verify Unix CLI archive subject
         if: runner.os != 'Windows'
         shell: bash
-        run: target/release/tinkora-id --version
+        run: |
+          target/release/tinkora-id --version
+          target/release/tinkora-time --version
 
       - name: Verify Windows CLI archive subject
         if: runner.os == 'Windows'
         shell: pwsh
-        run: '& target/release/tinkora-id.exe --version'
+        run: |
+          & target/release/tinkora-id.exe --version
+          & target/release/tinkora-time.exe --version
 
       - name: Archive Unix CLI
         if: runner.os != 'Windows'
@@ -87,11 +91,14 @@ jobs:
           VERSION: ${{ needs.metadata.outputs.version }}
         run: |
           set -euo pipefail
-          archive_stem="tinkora-id-${VERSION}-${TARGET}"
+          archive_stem="tinkora-developer-primitives-${VERSION}-${TARGET}"
           package="$RUNNER_TEMP/$archive_stem"
-          mkdir -- "$package"
+          mkdir -p -- "$package/docs" "$package/skills"
           cp target/release/tinkora-id "$package/tinkora-id"
-          cp LICENSE README.md THIRD_PARTY_NOTICES.md "$package/"
+          cp target/release/tinkora-time "$package/tinkora-time"
+          cp LICENSE README.md README.zh-CN.md CHANGELOG.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md THIRD_PARTY_NOTICES.md "$package/"
+          cp docs/product_spec.md docs/product_spec.zh-CN.md "$package/docs/"
+          cp skills/uuid_factory.md skills/mcp-tools.json "$package/skills/"
           tar -C "$RUNNER_TEMP" -czf "$RUNNER_TEMP/${archive_stem}.tar.gz" "$archive_stem"
 
       - name: Archive Windows CLI
@@ -101,18 +108,23 @@ jobs:
           TARGET: ${{ matrix.target }}
           VERSION: ${{ needs.metadata.outputs.version }}
         run: |
-          $archiveStem = "tinkora-id-$env:VERSION-$env:TARGET"
+          $archiveStem = "tinkora-developer-primitives-$env:VERSION-$env:TARGET"
           $package = Join-Path $env:RUNNER_TEMP $archiveStem
           New-Item -ItemType Directory -Force -Path $package | Out-Null
+          New-Item -ItemType Directory -Force -Path (Join-Path $package 'docs') | Out-Null
+          New-Item -ItemType Directory -Force -Path (Join-Path $package 'skills') | Out-Null
           Copy-Item target/release/tinkora-id.exe (Join-Path $package 'tinkora-id.exe')
-          Copy-Item LICENSE,README.md,THIRD_PARTY_NOTICES.md -Destination $package
+          Copy-Item target/release/tinkora-time.exe (Join-Path $package 'tinkora-time.exe')
+          Copy-Item LICENSE,README.md,README.zh-CN.md,CHANGELOG.md,CONTRIBUTING.md,SECURITY.md,CODE_OF_CONDUCT.md,THIRD_PARTY_NOTICES.md -Destination $package
+          Copy-Item docs/product_spec.md,docs/product_spec.zh-CN.md -Destination (Join-Path $package 'docs')
+          Copy-Item skills/uuid_factory.md,skills/mcp-tools.json -Destination (Join-Path $package 'skills')
           Compress-Archive -Path $package -DestinationPath (Join-Path $env:RUNNER_TEMP "$archiveStem.zip")
 
       - name: Upload CLI archive
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: release-cli-${{ matrix.platform }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/tinkora-id-${{ needs.metadata.outputs.version }}-${{ matrix.target }}.${{ matrix.extension }}
+          path: ${{ runner.temp }}/tinkora-developer-primitives-${{ needs.metadata.outputs.version }}-${{ matrix.target }}.${{ matrix.extension }}
           if-no-files-found: error
           include-hidden-files: false
           overwrite: true
@@ -145,7 +157,10 @@ jobs:
           set -euo pipefail
           wasm-pack build --target web --release --out-dir "$RUNNER_TEMP/wasm-package" crates/uuid_factory_web -- --locked
           ruby scripts/assemble_pages.rb --wasm-package "$RUNNER_TEMP/wasm-package"
-          cp LICENSE README.md THIRD_PARTY_NOTICES.md dist/
+          mkdir -p dist/docs dist/skills
+          cp LICENSE README.md README.zh-CN.md CHANGELOG.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md THIRD_PARTY_NOTICES.md dist/
+          cp docs/product_spec.md docs/product_spec.zh-CN.md dist/docs/
+          cp skills/uuid_factory.md skills/mcp-tools.json dist/skills/
 
       - name: Archive Web workbench
         shell: bash

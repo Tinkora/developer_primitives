@@ -70,6 +70,24 @@ contracts.each do |relative, marker|
   ERRORS << "#{relative}: missing bilingual entry #{marker}" unless read_utf8(path).include?(marker)
 end
 
+content_contracts = {
+  "README.md" => ["tinkora-time", "IANA tzdb 2026c", "UNAMBIGUOUS", "GAP", "FOLD"],
+  "README.zh-CN.md" => ["tinkora-time", "IANA tzdb 2026c", "UNAMBIGUOUS", "GAP", "FOLD"],
+  "docs/product_spec.md" => ["tinkora-time", "IANA tzdb 2026c", "UNAMBIGUOUS", "GAP", "FOLD"],
+  "docs/product_spec.zh-CN.md" => ["tinkora-time", "IANA tzdb 2026c", "UNAMBIGUOUS", "GAP", "FOLD"],
+  "THIRD_PARTY_NOTICES.md" => ["Jiff", "jiff-tzdb"]
+}
+
+content_contracts.each do |relative, markers|
+  path = ROOT.join(relative)
+  next unless path.file?
+
+  text = read_utf8(path)
+  markers.each do |marker|
+    ERRORS << "#{relative}: missing public contract #{marker}" unless text.include?(marker)
+  end
+end
+
 schema_path = ROOT.join("skills/mcp-tools.json")
 if schema_path.file?
   begin

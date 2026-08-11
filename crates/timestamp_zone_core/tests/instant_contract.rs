@@ -48,6 +48,17 @@ fn rejects_sub_millisecond_rfc3339_precision() {
 }
 
 #[test]
+fn rejects_rfc3339_fraction_with_more_than_three_digits_even_when_trailing_zero() {
+    let error = parse_instant(
+        InstantInputKind::Rfc3339,
+        "2026-11-01T01:30:00.123000-04:00",
+    )
+    .unwrap_err();
+
+    assert_eq!(error, TimeError::InvalidRfc3339);
+}
+
+#[test]
 fn rejects_integer_overflow() {
     let error = parse_instant(InstantInputKind::UnixSeconds, "9223372036854775808").unwrap_err();
 

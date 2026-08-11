@@ -47,10 +47,16 @@ Run the complete gate before requesting review:
 cargo fmt --all -- --check
 cargo test --workspace --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo check -p uuid_factory_web --target wasm32-unknown-unknown --locked
 wasm-pack test --node crates/uuid_factory_web --locked
 cd crates/uuid_factory_web && npm run test:browser
 cd ../..
+ruby scripts/test_assemble_pages.rb
+ruby scripts/test_check_workflow_contracts.rb
+ruby scripts/test_validate_release.rb
 ruby scripts/check_docs.rb
+ruby scripts/check_workflow_contracts.rb
+cargo deny check advisories bans licenses sources
 ```
 
 Frontend changes must also be inspected in a real browser at 375, 768, 1024,
