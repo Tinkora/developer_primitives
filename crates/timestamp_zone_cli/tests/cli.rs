@@ -131,6 +131,34 @@ fn zone_search_is_case_insensitive_and_bounded() {
 }
 
 #[test]
+fn zone_lookup_returns_the_canonical_exact_name() {
+    let output = command()
+        .args(["zones", "--name", "asia/shanghai", "--json"])
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(value["zones"], serde_json::json!(["Asia/Shanghai"]));
+}
+
+#[test]
+fn zone_lookup_rejects_an_unknown_exact_name_with_a_stable_error_code() {
+    let output = command()
+        .args(["zones", "--name", "Mars/Olympus"])
+        .output()
+        .unwrap();
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "INVALID_TIMEZONE: Invalid IANA time zone\n"
+    );
+}
+
+#[test]
 fn zone_search_without_a_filter_returns_the_bounded_default_set() {
     let output = command().args(["zones", "--json"]).output().unwrap();
 

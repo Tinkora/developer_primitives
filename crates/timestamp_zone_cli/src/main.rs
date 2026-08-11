@@ -31,6 +31,8 @@ enum Command {
         json: bool,
     },
     Zones {
+        #[arg(long, conflicts_with = "filter")]
+        name: Option<String>,
         #[arg(long)]
         filter: Option<String>,
         #[arg(long)]
@@ -93,12 +95,25 @@ fn run(cli: Cli) -> Result<(), TimeError> {
                 print_resolution(&result);
             }
         }
-        Command::Zones { filter, json } => {
-            let filter = filter.unwrap_or_default();
+        Command::Zones { name, filter, json } => {
+            let (filter, zones) = match name {
+                Some(name) => {
+                    let zone = search_time_zones(&name)?
+                        .into_iter()
+                        .find(|zone| zone.eq_ignore_ascii_case(&name))
+                        .ok_or(TimeError::InvalidTimezone)?;
+                    (name, vec![zone])
+                }
+                None => {
+                    let filter = filter.unwrap_or_default();
+                    let zones = search_time_zones(&filter)?;
+                    (filter, zones)
+                }
+            };
             let output = ZoneSearchOutput {
                 schema_version: 1,
                 tzdb_version: time_zone_database_version().to_string(),
-                zones: search_time_zones(&filter)?,
+                zones,
                 filter,
             };
             if json {
