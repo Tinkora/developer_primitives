@@ -670,6 +670,7 @@ dependencies = [
  "js-sys",
  "serde",
  "serde-wasm-bindgen",
+ "timestamp_zone_core",
  "uuid_factory_core",
  "wasm-bindgen",
  "wasm-bindgen-test",

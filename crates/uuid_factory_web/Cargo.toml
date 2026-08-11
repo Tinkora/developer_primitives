@@ -13,6 +13,7 @@ wasm-opt = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+timestamp_zone_core = { version = "0.1.0", path = "../timestamp_zone_core" }
 uuid_factory_core = { version = "0.1.0", path = "../uuid_factory_core" }
 wasm-bindgen.workspace = true
 js-sys.workspace = true
