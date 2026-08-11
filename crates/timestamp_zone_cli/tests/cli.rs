@@ -42,6 +42,28 @@ fn convert_json_preserves_requested_zone_order() {
 }
 
 #[test]
+fn convert_accepts_a_negative_unix_millisecond_value_after_a_space() {
+    let output = command()
+        .args([
+            "convert",
+            "--unix-milliseconds",
+            "-1",
+            "--zone",
+            "UTC",
+            "--json",
+        ])
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(value["instant"]["unix_seconds"], -1);
+    assert_eq!(value["instant"]["unix_milliseconds"], -1);
+    assert_eq!(value["instant"]["utc_rfc3339"], "1969-12-31T23:59:59.999Z");
+}
+
+#[test]
 fn convert_rfc3339_writes_a_human_readable_result() {
     let output = command()
         .args([

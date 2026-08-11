@@ -46,9 +46,9 @@ enum Command {
     args = ["unix_seconds", "unix_milliseconds", "rfc3339"]
 )]
 struct InstantInput {
-    #[arg(long)]
+    #[arg(long, allow_hyphen_values = true)]
     unix_seconds: Option<String>,
-    #[arg(long)]
+    #[arg(long, allow_hyphen_values = true)]
     unix_milliseconds: Option<String>,
     #[arg(long)]
     rfc3339: Option<String>,
