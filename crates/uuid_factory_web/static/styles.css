@@ -62,7 +62,8 @@ input {
 
 button:focus-visible,
 input:focus-visible,
-textarea:focus-visible {
+textarea:focus-visible,
+.time-zone-suggestions button:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
@@ -139,6 +140,40 @@ textarea:focus-visible {
 .app-main {
   width: min(1180px, calc(100% - 32px));
   margin: 30px auto 20px;
+}
+
+.module-tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(132px, 1fr));
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.module-tabs button {
+  min-width: 132px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  transition: background-color 180ms ease-out, color 180ms ease-out;
+}
+
+.module-tabs button[aria-selected="true"] {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+#identifier-workbench,
+#time-workbench {
+  min-width: 0;
+}
+
+.module-tabs + section > .mode-tabs {
+  margin-top: 14px;
 }
 
 .mode-tabs {
@@ -292,7 +327,11 @@ legend,
   border-radius: 0;
 }
 
-#identifier-input {
+#identifier-input,
+#time-instant-input,
+#time-zone-input,
+#time-local-input,
+#time-resolve-zone {
   width: 100%;
   min-width: 0;
   padding: 0 12px;
@@ -304,7 +343,11 @@ legend,
   font-size: 0.82rem;
 }
 
-#identifier-input::placeholder {
+#identifier-input::placeholder,
+#time-instant-input::placeholder,
+#time-zone-input::placeholder,
+#time-local-input::placeholder,
+#time-resolve-zone::placeholder {
   color: var(--muted);
 }
 
@@ -456,6 +499,217 @@ legend,
   font-size: 0.84rem;
 }
 
+.time-workbench-panel {
+  min-height: 610px;
+}
+
+.time-kind-control label {
+  min-height: 52px;
+  line-height: 1.25;
+}
+
+.time-zone-field {
+  position: relative;
+}
+
+.time-zone-entry {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 8px;
+}
+
+.time-zone-suggestions {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  max-height: 224px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  list-style: none;
+}
+
+.time-zone-suggestions [role="option"] {
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.time-zone-suggestions [role="option"]:hover,
+.time-zone-suggestions [role="option"][aria-selected="true"] {
+  background: var(--surface-muted);
+  color: var(--primary);
+}
+
+.time-selected-zones {
+  display: grid;
+  height: 230px;
+  margin: -12px 0 0;
+  padding: 0;
+  align-content: start;
+  grid-auto-rows: 45px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-code);
+  list-style: none;
+}
+
+.time-selected-zones li {
+  display: grid;
+  min-width: 0;
+  height: 45px;
+  padding-left: 12px;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.time-selected-zones li:last-child {
+  border-bottom: 0;
+}
+
+.time-selected-zones span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.time-selected-zones .zone-remove {
+  width: 44px;
+  height: 44px;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+}
+
+.time-primary {
+  display: grid;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  border-left: 3px solid var(--primary);
+  background: var(--primary-soft);
+}
+
+.time-primary div {
+  min-width: 0;
+}
+
+.time-primary dt,
+.resolution-candidate dt {
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.time-primary dd,
+.resolution-candidate dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.time-result-table {
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.time-result-table table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.time-result-table th,
+.time-result-table td {
+  min-width: 0;
+  padding: 12px 10px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.time-result-table th {
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.time-result-table td {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.time-result-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.time-result-table th:nth-child(1) { width: 24%; }
+.time-result-table th:nth-child(2) { width: 31%; }
+.time-result-table th:nth-child(3) { width: 14%; }
+.time-result-table th:nth-child(4) { width: 19%; }
+.time-result-table th:nth-child(5) { width: 12%; }
+
+.time-resolution-output {
+  display: grid;
+  gap: 14px;
+}
+
+.resolution-status {
+  width: fit-content;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: #fff7ed;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.resolution-candidate {
+  display: grid;
+  margin: 0;
+  padding: 14px 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-code);
+}
+
+.resolution-candidate div {
+  min-width: 0;
+}
+
 .status-bar {
   display: flex;
   min-height: 36px;
@@ -480,7 +734,7 @@ body[data-ready="true"] #status-indicator {
   background: var(--primary);
 }
 
-@media (max-width: 760px) {
+@media (max-width: 820px) {
   .header-inner,
   .app-main {
     width: min(100% - 24px, 680px);
@@ -512,6 +766,15 @@ body[data-ready="true"] #status-indicator {
     width: 100%;
   }
 
+  .module-tabs {
+    display: grid;
+    width: 100%;
+  }
+
+  .module-tabs button {
+    min-width: 0;
+  }
+
   .mode-tabs button {
     min-width: 0;
   }
@@ -534,6 +797,60 @@ body[data-ready="true"] #status-indicator {
   .inspection-output {
     min-height: 300px;
     height: 300px;
+  }
+
+  .time-primary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .time-result-table {
+    border: 0;
+    overflow: visible;
+  }
+
+  .time-result-table table,
+  .time-result-table tbody,
+  .time-result-table tr,
+  .time-result-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .time-result-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .time-result-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .time-result-table tr {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-code);
+  }
+
+  .time-result-table td {
+    display: grid;
+    padding: 10px 12px;
+    grid-template-columns: minmax(92px, 0.4fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .time-result-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-family: "IBM Plex Sans", Inter, ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
   }
 }
 
@@ -569,6 +886,14 @@ body[data-ready="true"] #status-indicator {
   .kind-control label {
     padding: 0 4px;
     font-size: 0.74rem;
+  }
+
+  .time-kind-control {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .resolution-candidate {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .result-toolbar {

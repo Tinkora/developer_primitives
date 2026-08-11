@@ -4,8 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <meta name="description" content="Generate and inspect UUID v4, UUID v7, and ULID identifiers locally.">
-  <title>Identifier Workbench | Tinkora</title>
+  <meta name="description" content="Generate identifiers and convert timestamps with bundled IANA time-zone data, locally.">
+  <title>Developer Primitives | Tinkora</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body data-ready="false">
@@ -37,6 +38,10 @@
       <circle cx="11" cy="11" r="8"></circle>
       <path d="m21 21-4.3-4.3"></path>
     </symbol>
+    <symbol id="icon-x" viewBox="0 0 24 24">
+      <path d="M18 6 6 18"></path>
+      <path d="m6 6 12 12"></path>
+    </symbol>
   </svg>
 
   <header class="app-header">
@@ -46,110 +51,199 @@
         <span>Tinkora</span>
       </div>
       <div class="product-title">
-        <span>Developer Primitives</span>
-        <h1>Identifier Workbench</h1>
+        <span>Local developer tools</span>
+        <h1>Developer Primitives</h1>
       </div>
     </div>
   </header>
 
   <main id="main-content" class="app-main">
-    <div class="mode-tabs" role="tablist" aria-label="Workbench mode">
-      <button id="mode-generate" type="button" role="tab" aria-selected="true" aria-controls="generate-panel">Generate</button>
-      <button id="mode-inspect" type="button" role="tab" aria-selected="false" aria-controls="inspect-panel" tabindex="-1">Inspect</button>
+    <div class="module-tabs" role="tablist" aria-label="Developer Primitives module">
+      <button id="module-identifiers" type="button" role="tab" aria-selected="true" aria-controls="identifier-workbench">Identifiers</button>
+      <button id="module-time" type="button" role="tab" aria-selected="false" aria-controls="time-workbench" tabindex="-1">Time</button>
     </div>
 
-    <section class="workbench" aria-label="Identifier workbench">
-      <div class="control-pane">
-        <section id="generate-panel" role="tabpanel" aria-labelledby="mode-generate">
-          <form id="generate-form" novalidate>
-            <fieldset>
-              <legend>Identifier kind</legend>
-              <div class="kind-control">
-                <input id="kind-uuid-v4" name="kind" type="radio" value="uuid-v4" checked>
-                <label for="kind-uuid-v4">UUID v4</label>
-                <input id="kind-uuid-v7" name="kind" type="radio" value="uuid-v7">
-                <label for="kind-uuid-v7">UUID v7</label>
-                <input id="kind-ulid" name="kind" type="radio" value="ulid">
-                <label for="kind-ulid">ULID</label>
-              </div>
-            </fieldset>
-
-            <div class="field-group">
-              <label for="count">Count</label>
-              <div class="stepper">
-                <button id="count-decrease" class="icon-button" type="button" aria-label="Decrease count" title="Decrease count">
-                  <svg aria-hidden="true"><use href="#icon-minus"></use></svg>
-                </button>
-                <input id="count" name="count" type="number" value="1" min="1" max="10000" inputmode="numeric" autocomplete="off">
-                <button id="count-increase" class="icon-button" type="button" aria-label="Increase count" title="Increase count">
-                  <svg aria-hidden="true"><use href="#icon-plus"></use></svg>
-                </button>
-              </div>
-            </div>
-
-            <p id="generate-error" class="inline-error" role="alert" hidden></p>
-            <button id="generate-submit" class="primary-button" type="submit" disabled>
-              <svg aria-hidden="true"><use href="#icon-refresh"></use></svg>
-              <span>Generate</span>
-            </button>
-          </form>
-        </section>
-
-        <section id="inspect-panel" role="tabpanel" aria-labelledby="mode-inspect" hidden>
-          <form id="inspect-form" novalidate>
-            <div class="field-group">
-              <label for="identifier-input">Identifier</label>
-              <input id="identifier-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="128" placeholder="550e8400-e29b-41d4-a716-446655440000">
-            </div>
-            <p id="inspect-error" class="inline-error" role="alert" hidden></p>
-            <button id="inspect-submit" class="primary-button" type="submit" disabled>
-              <svg aria-hidden="true"><use href="#icon-search"></use></svg>
-              <span>Inspect</span>
-            </button>
-          </form>
-        </section>
+    <section id="identifier-workbench" role="tabpanel" aria-labelledby="module-identifiers">
+      <div class="mode-tabs" role="tablist" aria-label="Identifier mode">
+        <button id="mode-generate" type="button" role="tab" aria-selected="true" aria-controls="generate-panel">Generate</button>
+        <button id="mode-inspect" type="button" role="tab" aria-selected="false" aria-controls="inspect-panel" tabindex="-1">Inspect</button>
       </div>
 
-      <section class="result-pane" aria-labelledby="result-title">
-        <div class="result-toolbar">
-          <div>
-            <h2 id="result-title">Output</h2>
-            <span id="result-count" class="result-meta">0 identifiers</span>
-          </div>
-          <div class="result-actions">
-            <button id="copy-output" class="icon-button" type="button" aria-label="Copy output" title="Copy output" disabled>
-              <svg aria-hidden="true"><use href="#icon-copy"></use></svg>
-            </button>
-            <button id="download-output" class="icon-button" type="button" aria-label="Download output" title="Download output" disabled>
-              <svg aria-hidden="true"><use href="#icon-download"></use></svg>
-            </button>
-          </div>
+      <section class="workbench">
+        <div class="control-pane">
+          <section id="generate-panel" role="tabpanel" aria-labelledby="mode-generate">
+            <form id="generate-form" novalidate>
+              <fieldset>
+                <legend>Identifier kind</legend>
+                <div class="kind-control">
+                  <input id="kind-uuid-v4" name="kind" type="radio" value="uuid-v4" checked>
+                  <label for="kind-uuid-v4">UUID v4</label>
+                  <input id="kind-uuid-v7" name="kind" type="radio" value="uuid-v7">
+                  <label for="kind-uuid-v7">UUID v7</label>
+                  <input id="kind-ulid" name="kind" type="radio" value="ulid">
+                  <label for="kind-ulid">ULID</label>
+                </div>
+              </fieldset>
+
+              <div class="field-group">
+                <label for="count">Count</label>
+                <div class="stepper">
+                  <button id="count-decrease" class="icon-button" type="button" aria-label="Decrease count" title="Decrease count">
+                    <svg aria-hidden="true"><use href="#icon-minus"></use></svg>
+                  </button>
+                  <input id="count" name="count" type="number" value="1" min="1" max="10000" inputmode="numeric" autocomplete="off">
+                  <button id="count-increase" class="icon-button" type="button" aria-label="Increase count" title="Increase count">
+                    <svg aria-hidden="true"><use href="#icon-plus"></use></svg>
+                  </button>
+                </div>
+              </div>
+
+              <p id="generate-error" class="inline-error" role="alert" hidden></p>
+              <button id="generate-submit" class="primary-button" type="submit" disabled>
+                <svg aria-hidden="true"><use href="#icon-refresh"></use></svg>
+                <span>Generate</span>
+              </button>
+            </form>
+          </section>
+
+          <section id="inspect-panel" role="tabpanel" aria-labelledby="mode-inspect" hidden>
+            <form id="inspect-form" novalidate>
+              <div class="field-group">
+                <label for="identifier-input">Identifier</label>
+                <input id="identifier-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="128" placeholder="550e8400-e29b-41d4-a716-446655440000">
+              </div>
+              <p id="inspect-error" class="inline-error" role="alert" hidden></p>
+              <button id="inspect-submit" class="primary-button" type="submit" disabled>
+                <svg aria-hidden="true"><use href="#icon-search"></use></svg>
+                <span>Inspect</span>
+              </button>
+            </form>
+          </section>
         </div>
 
-        <textarea id="generate-output" class="generate-output" aria-label="Generated identifiers" readonly spellcheck="false"></textarea>
+        <section class="result-pane" aria-labelledby="result-title">
+          <div class="result-toolbar">
+            <div>
+              <h2 id="result-title">Output</h2>
+              <span id="result-count" class="result-meta">0 identifiers</span>
+            </div>
+            <div class="result-actions">
+              <button id="copy-output" class="icon-button" type="button" aria-label="Copy output" title="Copy output" disabled>
+                <svg aria-hidden="true"><use href="#icon-copy"></use></svg>
+              </button>
+              <button id="download-output" class="icon-button" type="button" aria-label="Download output" title="Download output" disabled>
+                <svg aria-hidden="true"><use href="#icon-download"></use></svg>
+              </button>
+            </div>
+          </div>
 
-        <dl id="inspect-output" class="inspection-output" hidden>
-          <div>
-            <dt>Kind</dt>
-            <dd data-field="kind">-</dd>
+          <textarea id="generate-output" class="generate-output" aria-label="Generated identifiers" readonly spellcheck="false"></textarea>
+
+          <dl id="inspect-output" class="inspection-output" hidden>
+            <div><dt>Kind</dt><dd data-field="kind">-</dd></div>
+            <div><dt>Canonical</dt><dd data-field="canonical">-</dd></div>
+            <div><dt>Version</dt><dd data-field="version">-</dd></div>
+            <div><dt>Variant</dt><dd data-field="variant">-</dd></div>
+            <div><dt>Timestamp (ms)</dt><dd data-field="timestamp_ms">-</dd></div>
+          </dl>
+        </section>
+      </section>
+    </section>
+
+    <section id="time-workbench" role="tabpanel" aria-labelledby="module-time" hidden>
+      <div class="mode-tabs" role="tablist" aria-label="Time mode">
+        <button id="time-mode-convert" type="button" role="tab" aria-selected="true" aria-controls="time-convert-panel">Convert instant</button>
+        <button id="time-mode-resolve" type="button" role="tab" aria-selected="false" aria-controls="time-resolve-panel" tabindex="-1">Resolve local</button>
+      </div>
+
+      <section class="workbench time-workbench-panel">
+        <div class="control-pane">
+          <section id="time-convert-panel" role="tabpanel" aria-labelledby="time-mode-convert">
+            <form id="time-convert-form" novalidate>
+              <fieldset>
+                <legend>Instant input</legend>
+                <div class="kind-control time-kind-control">
+                  <input id="time-kind-seconds" name="time-input-kind" type="radio" value="unix-seconds" checked>
+                  <label for="time-kind-seconds">Unix seconds</label>
+                  <input id="time-kind-milliseconds" name="time-input-kind" type="radio" value="unix-milliseconds">
+                  <label for="time-kind-milliseconds">Unix milliseconds</label>
+                  <input id="time-kind-rfc3339" name="time-input-kind" type="radio" value="rfc3339">
+                  <label for="time-kind-rfc3339">RFC 3339</label>
+                </div>
+              </fieldset>
+
+              <div class="field-group">
+                <label for="time-instant-input">Value</label>
+                <input id="time-instant-input" type="text" value="0" autocomplete="off" autocapitalize="off" spellcheck="false">
+              </div>
+
+              <div class="field-group time-zone-field">
+                <label for="time-zone-input">Add IANA time zone</label>
+                <div class="time-zone-entry">
+                  <input id="time-zone-input" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="time-zone-suggestions" aria-haspopup="listbox" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="128" placeholder="Asia/Shanghai">
+                  <button id="time-add-zone" class="icon-button" type="button" aria-label="Add time zone" title="Add time zone" disabled>
+                    <svg aria-hidden="true"><use href="#icon-plus"></use></svg>
+                  </button>
+                </div>
+                <ul id="time-zone-suggestions" class="time-zone-suggestions" role="listbox" aria-label="Time zone suggestions" hidden></ul>
+              </div>
+
+              <ul id="time-selected-zones" class="time-selected-zones" aria-label="Selected time zones"></ul>
+              <p id="time-convert-error" class="inline-error" role="alert" hidden></p>
+              <button id="time-convert-submit" class="primary-button" type="submit" disabled>
+                <svg aria-hidden="true"><use href="#icon-refresh"></use></svg>
+                <span>Convert</span>
+              </button>
+            </form>
+          </section>
+
+          <section id="time-resolve-panel" role="tabpanel" aria-labelledby="time-mode-resolve" hidden>
+            <form id="time-resolve-form" novalidate>
+              <div class="field-group">
+                <label for="time-local-input">Local date and time</label>
+                <input id="time-local-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="2026-11-01T01:30:00">
+              </div>
+              <div class="field-group">
+                <label for="time-resolve-zone">IANA time zone</label>
+                <input id="time-resolve-zone" type="text" value="America/New_York" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64">
+              </div>
+              <p id="time-resolve-error" class="inline-error" role="alert" hidden></p>
+              <button id="time-resolve-submit" class="primary-button" type="submit" disabled>
+                <svg aria-hidden="true"><use href="#icon-search"></use></svg>
+                <span>Resolve</span>
+              </button>
+            </form>
+          </section>
+        </div>
+
+        <section class="result-pane" aria-labelledby="time-result-title">
+          <div class="result-toolbar">
+            <div>
+              <h2 id="time-result-title">Time result</h2>
+              <span id="time-result-meta" class="result-meta">IANA tzdb 2026c</span>
+            </div>
+            <div class="result-actions">
+              <button id="time-copy-output" class="icon-button" type="button" aria-label="Copy time result" title="Copy time result" disabled>
+                <svg aria-hidden="true"><use href="#icon-copy"></use></svg>
+              </button>
+            </div>
           </div>
-          <div>
-            <dt>Canonical</dt>
-            <dd data-field="canonical">-</dd>
+
+          <dl id="time-primary-utc" class="time-primary" hidden>
+            <div><dt>UTC</dt><dd data-time-field="utc">-</dd></div>
+            <div><dt>Unix seconds</dt><dd data-time-field="seconds">-</dd></div>
+            <div><dt>Unix milliseconds</dt><dd data-time-field="milliseconds">-</dd></div>
+          </dl>
+
+          <div id="time-conversion-output" class="time-result-table" hidden>
+            <table>
+              <thead><tr><th scope="col">Zone</th><th scope="col">Local time</th><th scope="col">Offset</th><th scope="col">Abbreviation</th><th scope="col">DST</th></tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
-          <div>
-            <dt>Version</dt>
-            <dd data-field="version">-</dd>
-          </div>
-          <div>
-            <dt>Variant</dt>
-            <dd data-field="variant">-</dd>
-          </div>
-          <div>
-            <dt>Timestamp (ms)</dt>
-            <dd data-field="timestamp_ms">-</dd>
-          </div>
-        </dl>
+
+          <div id="time-resolution-output" class="time-resolution-output" hidden></div>
+        </section>
       </section>
     </section>
 
