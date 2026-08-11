@@ -1,0 +1,17 @@
+[package]
+name = "timestamp_zone_cli"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "tinkora-time"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+timestamp_zone_core = { version = "0.1.0", path = "../timestamp_zone_core" }

@@ -10,7 +10,8 @@ use serde::Serialize;
 
 use crate::{
     InstantInputKind, MAX_TIME_INPUT_BYTES, MAX_TIMEZONE_COUNT, MAX_TIMEZONE_NAME_BYTES,
-    ParsedInstant, TimeError, instant::parsed_from_timestamp, parse_instant,
+    MAX_TIMEZONE_SEARCH_RESULTS, ParsedInstant, TimeError, instant::parsed_from_timestamp,
+    parse_instant,
 };
 
 /// One instant rendered in a requested IANA time zone.
@@ -73,6 +74,23 @@ pub struct LocalTimeResult {
 /// Return the bundled IANA Time Zone Database release.
 pub fn time_zone_database_version() -> &'static str {
     jiff_tzdb::VERSION.unwrap_or("unknown")
+}
+
+/// Return at most fifty bundled IANA zone names matching an ASCII-insensitive filter.
+pub fn search_time_zones(filter: &str) -> Result<Vec<String>, TimeError> {
+    let filter = filter.trim();
+    if filter.len() > MAX_TIME_INPUT_BYTES {
+        return Err(TimeError::InputTooLong);
+    }
+
+    let filter = filter.to_ascii_lowercase();
+    let mut names: Vec<_> = jiff_tzdb::available()
+        .filter(|name| name.to_ascii_lowercase().contains(&filter))
+        .map(str::to_owned)
+        .collect();
+    names.sort_unstable();
+    names.truncate(MAX_TIMEZONE_SEARCH_RESULTS);
+    Ok(names)
 }
 
 /// Convert one explicitly typed instant into one through eight IANA zones.

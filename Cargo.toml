@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/timestamp_zone_core",
+    "crates/timestamp_zone_cli",
     "crates/uuid_factory_cli",
     "crates/uuid_factory_core",
     "crates/uuid_factory_web",

@@ -1,6 +1,6 @@
 use timestamp_zone_core::{
     InstantInputKind, LocalResolution, TimeError, convert_instant, resolve_local_time,
-    time_zone_database_version,
+    search_time_zones, time_zone_database_version,
 };
 
 #[test]
@@ -139,4 +139,22 @@ fn rejects_local_input_with_an_offset() {
     let error = resolve_local_time("2026-11-01T01:30:00-04:00", "America/New_York").unwrap_err();
 
     assert_eq!(error, TimeError::InvalidLocalDateTime);
+}
+
+#[test]
+fn searches_zone_names_case_insensitively_in_stable_bounded_order() {
+    let matches = search_time_zones("SHANGHAI").unwrap();
+    assert_eq!(matches, ["Asia/Shanghai"]);
+
+    let all = search_time_zones("").unwrap();
+    assert_eq!(all.len(), 50);
+    assert!(all.windows(2).all(|pair| pair[0] <= pair[1]));
+}
+
+#[test]
+fn rejects_an_overlong_zone_search_filter() {
+    let filter = "x".repeat(129);
+    let error = search_time_zones(&filter).unwrap_err();
+
+    assert_eq!(error, TimeError::InputTooLong);
 }
