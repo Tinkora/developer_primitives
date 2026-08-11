@@ -45,14 +45,7 @@ pub fn parse_instant(kind: InstantInputKind, input: &str) -> Result<ParsedInstan
         InstantInputKind::Rfc3339 => parse_rfc3339(input)?,
     };
 
-    let unix_milliseconds = timestamp.as_millisecond();
-
-    Ok(ParsedInstant {
-        schema_version: 1,
-        unix_seconds: unix_milliseconds.div_euclid(1_000),
-        unix_milliseconds,
-        utc_rfc3339: timestamp.to_string(),
-    })
+    Ok(parsed_from_timestamp(timestamp))
 }
 
 fn parse_rfc3339(input: &str) -> Result<Timestamp, TimeError> {
@@ -62,4 +55,15 @@ fn parse_rfc3339(input: &str) -> Result<Timestamp, TimeError> {
     }
 
     Timestamp::from_millisecond(datetime.timestamp_millis()).map_err(|_| TimeError::InvalidRfc3339)
+}
+
+pub(crate) fn parsed_from_timestamp(timestamp: Timestamp) -> ParsedInstant {
+    let unix_milliseconds = timestamp.as_millisecond();
+
+    ParsedInstant {
+        schema_version: 1,
+        unix_seconds: unix_milliseconds.div_euclid(1_000),
+        unix_milliseconds,
+        utc_rfc3339: timestamp.to_string(),
+    }
 }
