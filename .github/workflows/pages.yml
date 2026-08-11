@@ -1,0 +1,104 @@
+name: Publish workbench
+
+'on':
+  push:
+    branches: [main]
+    paths:
+      - 'crates/uuid_factory_core/**'
+      - 'crates/uuid_factory_web/**'
+      - 'scripts/assemble_pages.rb'
+      - '.github/workflows/pages.yml'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build WebAssembly package
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain and WASM target
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.95.0 --profile minimal --no-self-update
+          rustup target add wasm32-unknown-unknown --toolchain 1.95.0
+          cargo +1.95.0 install wasm-pack --version 0.15.0 --locked
+
+      - name: Build WebAssembly package
+        shell: bash
+        env:
+          RUSTUP_TOOLCHAIN: '1.95.0'
+        run: |
+          set -euo pipefail
+          wasm-pack build --target web --release --out-dir "$RUNNER_TEMP/wasm-package" crates/uuid_factory_web -- --locked
+
+      - name: Upload WebAssembly package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: wasm-package-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/wasm-package
+          if-no-files-found: error
+          include-hidden-files: false
+          overwrite: true
+          retention-days: 1
+
+  assemble:
+    name: Assemble Pages source
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Download WebAssembly package
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: wasm-package-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/wasm-package
+
+      - name: Assemble static site
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby scripts/assemble_pages.rb --wasm-package "$RUNNER_TEMP/wasm-package"
+
+      - name: Upload Pages source
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: pages-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist
+          if-no-files-found: error
+          include-hidden-files: false
+          overwrite: true
+          retention-days: 1
+
+  deploy:
+    name: Deploy Pages
+    if: github.ref == 'refs/heads/main'
+    needs: assemble
+    permissions:
+      contents: read
+      pages: write # Required by the reusable Pages deployment job.
+      id-token: write # Required by the reusable Pages deployment job.
+    uses: Tinkora/.github/.github/workflows/reusable-pages.yml@e967aed0860957b24daf57e66766713c60b5bcae
+    with:
+      source-artifact-name: pages-source-${{ github.run_id }}-${{ github.run_attempt }}

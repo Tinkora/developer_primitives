@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": 1,
+  "name": "tinkora-developer-primitives-draft",
+  "status": "draft",
+  "runnable": false,
+  "transport": null,
+  "description": "Documentation-only tool schemas. This repository does not implement or expose an MCP server.",
+  "tools": [
+    {
+      "name": "generate_identifier",
+      "description": "Generate an ordered batch of UUID v4, UUID v7, or ULID identifiers.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["uuid-v4", "uuid-v7", "ulid"]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "default": 1
+          }
+        },
+        "required": ["kind"],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": ["schema_version", "kind", "count", "identifiers"],
+        "properties": {
+          "schema_version": {"const": 1},
+          "kind": {"enum": ["uuid-v4", "uuid-v7", "ulid"]},
+          "count": {"type": "integer", "minimum": 1, "maximum": 10000},
+          "identifiers": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10000,
+            "items": {"type": "string"}
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "inspect_identifier",
+      "description": "Strictly inspect a canonical UUID or uppercase ULID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": ["identifier"],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": ["schema_version", "input", "canonical", "kind"],
+        "properties": {
+          "schema_version": {"const": 1},
+          "input": {"type": "string"},
+          "canonical": {"type": "string"},
+          "kind": {"enum": ["uuid", "ulid"]},
+          "version": {"type": ["integer", "null"]},
+          "variant": {"type": ["string", "null"]},
+          "timestamp_ms": {"type": ["integer", "null"], "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stable_error_codes": [
+    "INVALID_UUID",
+    "INVALID_ULID",
+    "INVALID_IDENTIFIER",
+    "BATCH_OUT_OF_RANGE",
+    "UNSUPPORTED_KIND",
+    "RANDOM_UNAVAILABLE",
+    "CLOCK_UNAVAILABLE",
+    "SERIALIZATION_FAILED"
+  ]
+}

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/Tinkora/developer_primitives/discussions
+    about: Start a Discussion for usage questions or broad proposals.
+  - name: Private security report
+    url: https://github.com/Tinkora/developer_primitives/security/advisories/new
+    about: Do not disclose vulnerabilities in a public issue.

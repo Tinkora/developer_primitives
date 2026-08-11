@@ -1,0 +1,75 @@
+name: Project contracts and browser
+
+'on':
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    name: Local contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Run Ruby contract tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby scripts/test_assemble_pages.rb
+          ruby scripts/test_check_workflow_contracts.rb
+          ruby scripts/test_validate_release.rb
+          ruby scripts/check_docs.rb
+
+  browser:
+    name: Browser workbench
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: crates/uuid_factory_web/package-lock.json
+
+      - name: Install Rust toolchain and WASM target
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.95.0 --profile minimal --no-self-update
+          rustup target add wasm32-unknown-unknown --toolchain 1.95.0
+          cargo +1.95.0 install wasm-pack --version 0.15.0 --locked
+
+      - name: Install browser test dependencies
+        working-directory: crates/uuid_factory_web
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts
+          npx --no-install playwright install --with-deps chromium
+
+      - name: Run browser tests
+        working-directory: crates/uuid_factory_web
+        shell: bash
+        env:
+          RUSTUP_TOOLCHAIN: '1.95.0'
+        run: npm run test:browser

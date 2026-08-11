@@ -1,0 +1,280 @@
+name: Release
+
+'on':
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  metadata:
+    name: Validate release metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out tagged commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Validate tag and changelog
+        shell: bash
+        run: ruby scripts/validate_release.rb --tag "$GITHUB_REF_NAME"
+
+      - name: Record version
+        id: version
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+  cli:
+    name: Package CLI (${{ matrix.platform }})
+    needs: metadata
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            extension: tar.gz
+          - platform: macos
+            runner: macos-15-intel
+            target: x86_64-apple-darwin
+            extension: tar.gz
+          - platform: windows
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            extension: zip
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - name: Check out tagged commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.95.0 --profile minimal --no-self-update
+
+      - name: Build CLI
+        shell: bash
+        run: cargo +1.95.0 build --release --locked -p uuid_factory_cli
+
+      - name: Verify Unix CLI archive subject
+        if: runner.os != 'Windows'
+        shell: bash
+        run: target/release/tinkora-id --version
+
+      - name: Verify Windows CLI archive subject
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: '& target/release/tinkora-id.exe --version'
+
+      - name: Archive Unix CLI
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          VERSION: ${{ needs.metadata.outputs.version }}
+        run: |
+          set -euo pipefail
+          archive_stem="tinkora-id-${VERSION}-${TARGET}"
+          package="$RUNNER_TEMP/$archive_stem"
+          mkdir -- "$package"
+          cp target/release/tinkora-id "$package/tinkora-id"
+          cp LICENSE README.md THIRD_PARTY_NOTICES.md "$package/"
+          tar -C "$RUNNER_TEMP" -czf "$RUNNER_TEMP/${archive_stem}.tar.gz" "$archive_stem"
+
+      - name: Archive Windows CLI
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          TARGET: ${{ matrix.target }}
+          VERSION: ${{ needs.metadata.outputs.version }}
+        run: |
+          $archiveStem = "tinkora-id-$env:VERSION-$env:TARGET"
+          $package = Join-Path $env:RUNNER_TEMP $archiveStem
+          New-Item -ItemType Directory -Force -Path $package | Out-Null
+          Copy-Item target/release/tinkora-id.exe (Join-Path $package 'tinkora-id.exe')
+          Copy-Item LICENSE,README.md,THIRD_PARTY_NOTICES.md -Destination $package
+          Compress-Archive -Path $package -DestinationPath (Join-Path $env:RUNNER_TEMP "$archiveStem.zip")
+
+      - name: Upload CLI archive
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: release-cli-${{ matrix.platform }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tinkora-id-${{ needs.metadata.outputs.version }}-${{ matrix.target }}.${{ matrix.extension }}
+          if-no-files-found: error
+          include-hidden-files: false
+          overwrite: true
+          retention-days: 1
+
+  web:
+    name: Package Web workbench
+    needs: metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out tagged commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain and WASM target
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.95.0 --profile minimal --no-self-update
+          rustup target add wasm32-unknown-unknown --toolchain 1.95.0
+          cargo +1.95.0 install wasm-pack --version 0.15.0 --locked
+
+      - name: Build static workbench
+        shell: bash
+        env:
+          RUSTUP_TOOLCHAIN: '1.95.0'
+        run: |
+          set -euo pipefail
+          wasm-pack build --target web --release --out-dir "$RUNNER_TEMP/wasm-package" crates/uuid_factory_web -- --locked
+          ruby scripts/assemble_pages.rb --wasm-package "$RUNNER_TEMP/wasm-package"
+          cp LICENSE README.md THIRD_PARTY_NOTICES.md dist/
+
+      - name: Archive Web workbench
+        shell: bash
+        env:
+          VERSION: ${{ needs.metadata.outputs.version }}
+        run: |
+          set -euo pipefail
+          (
+            cd dist
+            zip -r "$RUNNER_TEMP/tinkora-developer-primitives-web-${VERSION}.zip" .
+          )
+
+      - name: Upload Web archive
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: release-web-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tinkora-developer-primitives-web-${{ needs.metadata.outputs.version }}.zip
+          if-no-files-found: error
+          include-hidden-files: false
+          overwrite: true
+          retention-days: 1
+
+  assemble_release:
+    name: Assemble release assets
+    needs: [metadata, cli, web]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download release archives
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: release-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-assets
+          merge-multiple: true
+
+      - name: Write release metadata
+        shell: bash
+        env:
+          VERSION: ${{ needs.metadata.outputs.version }}
+        run: |
+          set -euo pipefail
+          jq -n --arg version "$VERSION" --arg commit "$GITHUB_SHA" \
+            '{version: $version, commit: $commit}' > "$RUNNER_TEMP/release-assets/release-metadata.json"
+
+      - name: Upload release source
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: release-assets-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-assets
+          if-no-files-found: error
+          include-hidden-files: false
+          overwrite: true
+          retention-days: 1
+
+  evidence:
+    name: Generate release evidence
+    needs: [metadata, assemble_release]
+    uses: Tinkora/.github/.github/workflows/reusable-release.yml@e967aed0860957b24daf57e66766713c60b5bcae
+    with:
+      source-artifact-name: release-assets-${{ github.run_id }}-${{ github.run_attempt }}
+      version: ${{ needs.metadata.outputs.version }}
+      publish: false
+
+  release:
+    name: Attest and publish release
+    needs: [metadata, evidence]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: release
+    permissions:
+      contents: write # Required to create the tagged GitHub release and upload assets.
+      attestations: write # Required to persist generated artifact attestations.
+      artifact-metadata: write # Required to create attestation storage records.
+      id-token: write # Required to mint the Sigstore signing certificate token.
+    steps:
+      - name: Check out tagged commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Download release evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: release-candidate-${{ needs.metadata.outputs.version }}
+          path: release
+
+      - name: Generate release notes
+        shell: bash
+        run: ruby scripts/validate_release.rb --tag "$GITHUB_REF_NAME" --notes release/notes.md
+
+      - name: Prepare provenance subjects
+        shell: bash
+        run: |
+          sed 's#  \./#  #' release/SHA256SUMS > release/provenance-SHA256SUMS
+
+      - name: Generate provenance attestation
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-checksums: release/provenance-SHA256SUMS
+
+      - name: Prepare SBOM subjects
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > release/sbom-SHA256SUMS
+          while IFS= read -r subject; do
+            name="${subject#./}"
+            [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]{0,200}$ ]] || { echo "unsafe SBOM subject name" >&2; exit 1; }
+            [[ -f "release/$name" ]] || { echo "SBOM subject is missing" >&2; exit 1; }
+            shasum -a 256 -- "release/$name" | sed 's#  release/#  #' >> release/sbom-SHA256SUMS
+          done < <(jq -r '.files[].fileName' release/SBOM.spdx.json)
+          [[ -s release/sbom-SHA256SUMS ]] || { echo "SBOM contains no attestation subjects" >&2; exit 1; }
+
+      - name: Generate SBOM attestation
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-checksums: release/sbom-SHA256SUMS
+          sbom-path: release/SBOM.spdx.json
+
+      - name: Publish GitHub release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" \
+            release/*.tar.gz \
+            release/*.zip \
+            release/SHA256SUMS \
+            release/SBOM.spdx.json \
+            release/LICENSES.json \
+            --notes-file release/notes.md \
+            --title "$GITHUB_REF_NAME" \
+            --verify-tag
