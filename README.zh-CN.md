@@ -3,7 +3,17 @@
 [English](README.md) | [产品规格](docs/product_spec.zh-CN.md) |
 [更新日志](CHANGELOG.md) | [贡献指南](CONTRIBUTING.md)
 
-[![在 Ko-fi 上支持 Tinkora](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/tinkora)
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+  <a href="https://ko-fi.com/tinkora" target="_blank" rel="noopener noreferrer">
+    <img
+      src="https://ko-fi.com/img/githubbutton_sm.svg"
+      alt="在 Ko-fi 上支持 Tinkora"
+      width="520"
+    >
+  </a>
+</p>
+<!-- markdownlint-enable MD033 -->
 
 Developer Primitives 是一个本地优先的浏览器工作台和双 CLI 工具，用于标识符
 生成、标识符检查和可复现的时区转换。浏览器应用将 Rust 编译为 WebAssembly 后

@@ -3,7 +3,17 @@
 [中文](README.zh-CN.md) | [Product specification](docs/product_spec.md) |
 [Changelog](CHANGELOG.md) | [Contributing](CONTRIBUTING.md)
 
-[![Support Tinkora on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/tinkora)
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+  <a href="https://ko-fi.com/tinkora" target="_blank" rel="noopener noreferrer">
+    <img
+      src="https://ko-fi.com/img/githubbutton_sm.svg"
+      alt="Support Tinkora on Ko-fi"
+      width="520"
+    >
+  </a>
+</p>
+<!-- markdownlint-enable MD033 -->
 
 Developer Primitives is a local-first browser workbench and pair of CLIs for
 identifier generation, identifier inspection, and reproducible time-zone
