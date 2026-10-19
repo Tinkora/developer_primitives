@@ -48,7 +48,7 @@ jobs:
           wasm-pack build --target web --release --out-dir "$RUNNER_TEMP/wasm-package" crates/uuid_factory_web -- --locked
 
       - name: Upload WebAssembly package
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: wasm-package-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/wasm-package
@@ -82,7 +82,7 @@ jobs:
           ruby scripts/assemble_pages.rb --wasm-package "$RUNNER_TEMP/wasm-package"
 
       - name: Upload Pages source
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: pages-source-${{ github.run_id }}-${{ github.run_attempt }}
           path: dist
